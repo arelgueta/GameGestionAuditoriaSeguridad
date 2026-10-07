@@ -1,0 +1,174 @@
+{
+  "id": "subasta",
+  "coinsStart": 100,
+  "baseScore": 100,
+  "affectedMax": 3,
+  "insuranceId": "seguro",
+  "responsePlanId": "plan",
+  "responsePlanBonus": 5,
+  "threatExamples": [
+    "Ransomware que cifra todo",
+    "Robo de contraseñas",
+    "Un empleado cae en un mail falso",
+    "Falla de un proveedor clave",
+    "Robo de una notebook"
+  ],
+  "controls": [
+    {
+      "id": "backups",
+      "name": "Backups desconectados y probados",
+      "units": 3,
+      "basePrice": 15,
+      "protects": "Ransomware, borrado accidental"
+    },
+    {
+      "id": "mfa",
+      "name": "Doble factor de autenticación (MFA)",
+      "units": 3,
+      "basePrice": 10,
+      "protects": "Robo de contraseñas, phishing de credenciales"
+    },
+    {
+      "id": "capacitacion",
+      "name": "Capacitación anual en phishing",
+      "units": 4,
+      "basePrice": 8,
+      "protects": "Ingeniería social"
+    },
+    {
+      "id": "pentest",
+      "name": "Pentest anual",
+      "units": 2,
+      "basePrice": 20,
+      "protects": "Fallos en la app (como el IDOR)"
+    },
+    {
+      "id": "seguro",
+      "name": "Ciberseguro",
+      "units": 2,
+      "basePrice": 15,
+      "protects": "Reduce a la mitad la pérdida de cualquier incidente"
+    },
+    {
+      "id": "updates",
+      "name": "Actualizaciones automáticas",
+      "units": 4,
+      "basePrice": 8,
+      "protects": "Vulnerabilidades conocidas"
+    },
+    {
+      "id": "plan",
+      "name": "Plan de respuesta a incidentes",
+      "units": 3,
+      "basePrice": 10,
+      "protects": "+5 de reputación por cada incidente sufrido"
+    },
+    {
+      "id": "cifrado",
+      "name": "Cifrado de notebooks",
+      "units": 3,
+      "basePrice": 6,
+      "protects": "Robo o pérdida de equipos"
+    },
+    {
+      "id": "proveedores",
+      "name": "Control de proveedores",
+      "units": 2,
+      "basePrice": 12,
+      "protects": "Fallas de un SaaS o proveedor"
+    }
+  ],
+  "incidents": [
+    {
+      "id": "ransomware",
+      "name": "Ransomware por mail falso",
+      "damage": 40,
+      "nullifiedBy": "backups",
+      "halvedBy": "capacitacion"
+    },
+    {
+      "id": "ceo",
+      "name": "Contraseña del CEO filtrada en otra web",
+      "damage": 30,
+      "nullifiedBy": "mfa",
+      "halvedBy": null
+    },
+    {
+      "id": "idor",
+      "name": "Un cliente descubre que ve facturas ajenas",
+      "damage": 35,
+      "nullifiedBy": "pentest",
+      "halvedBy": null
+    },
+    {
+      "id": "notebook",
+      "name": "Robo de notebook en un bar",
+      "damage": 20,
+      "nullifiedBy": "cifrado",
+      "halvedBy": null
+    },
+    {
+      "id": "vuln",
+      "name": "Vulnerabilidad conocida en el servidor",
+      "damage": 25,
+      "nullifiedBy": "updates",
+      "halvedBy": null
+    },
+    {
+      "id": "pagos",
+      "name": "Brecha en el proveedor de pagos",
+      "damage": 30,
+      "nullifiedBy": null,
+      "halvedBy": "proveedores"
+    },
+    {
+      "id": "bec",
+      "name": "Transferencia de USD 10.000 a un \"proveedor\" falso",
+      "damage": 25,
+      "nullifiedBy": "capacitacion",
+      "halvedBy": null
+    },
+    {
+      "id": "incendio",
+      "name": "Caída de 3 días por incendio en el datacenter",
+      "damage": 30,
+      "nullifiedBy": null,
+      "halvedBy": "backups"
+    }
+  ],
+  "riskResponses": [
+    {
+      "id": "mitigar",
+      "title": "Mitigar",
+      "text": "Reducir la probabilidad o el impacto con un control.",
+      "controls": [
+        "backups",
+        "mfa",
+        "capacitacion",
+        "pentest",
+        "updates",
+        "cifrado",
+        "proveedores",
+        "plan"
+      ]
+    },
+    {
+      "id": "transferir",
+      "title": "Transferir",
+      "text": "Pasar parte de la pérdida a un tercero (aseguradora, contrato).",
+      "controls": ["seguro", "proveedores"]
+    },
+    {
+      "id": "aceptar",
+      "title": "Aceptar",
+      "text": "Decidir conscientemente no invertir y asumir la pérdida si ocurre. Debe quedar documentado.",
+      "controls": []
+    },
+    {
+      "id": "evitar",
+      "title": "Evitar",
+      "text": "Dejar de hacer la actividad riesgosa (por ejemplo, no guardar datos que no se necesitan).",
+      "controls": []
+    }
+  ]
+}

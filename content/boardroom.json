@@ -1,0 +1,94 @@
+{
+  "id": "boardroom",
+  "budget": 12000,
+  "fundsMinChars": 200,
+  "providers": [
+    {
+      "id": "A",
+      "name": "Hackers Shadow",
+      "price": 2000,
+      "methodology": "\"Entramos sin avisar para demostrar que podemos\"",
+      "deliverables": "Reunión verbal, sin informe",
+      "contract": "Sin NDA ni alcance escrito"
+    },
+    {
+      "id": "B-full",
+      "name": "SecureAudit Corp (completo)",
+      "price": 15000,
+      "methodology": "PTES, fases claras",
+      "deliverables": "Executive Summary + Technical Report + re-prueba a 30 días",
+      "contract": "NDA, alcance y reglas firmadas"
+    },
+    {
+      "id": "B-web",
+      "name": "SecureAudit Corp (solo app web + API)",
+      "price": 9500,
+      "methodology": "Igual que B (PTES, fases claras)",
+      "deliverables": "Igual que B, alcance reducido",
+      "contract": "Igual que B"
+    },
+    {
+      "id": "C",
+      "name": "AutoScan AI Pro",
+      "price": 4800,
+      "priceNote": "USD 400/mes × 12 meses",
+      "methodology": "Escaneo automático",
+      "deliverables": "PDF genérico con muchos falsos positivos",
+      "contract": "Términos estándar"
+    }
+  ],
+  "feedback": {
+    "red": "Contratar a quien entra sin autorización es avalar un acceso indebido (Ley 26.388). Sin contrato no hay servicio, hay delito.",
+    "yellowOnlyC": "Un escáner automático no es un pentest; difícilmente detecte fallos de lógica de negocio como el IDOR que viene en la próxima fase.",
+    "green": "Buena elección: proveedor con metodología, contrato y entregables claros, dentro de lo que pueden justificar.",
+    "overBudget": "Se pasaron del presupuesto sin un pedido de fondos justificado: el inversor no lo va a aprobar.",
+    "empty": "No eligieron ningún proveedor.",
+    "neutral": "Combinación poco eficiente: revisen si están pagando dos veces por lo mismo."
+  },
+  "finding": {
+    "text": "Vulnerabilidad IDOR en /api/v1/facturas/{id}. Un usuario autenticado puede cambiar el número de ID en la URL y descargar facturas y datos personales de otros clientes. Verificada con 3 cuentas de prueba. La base tiene 18.000 clientes.",
+    "analogy": "Es como un guardarropas donde, si cambiás el número de tu ficha, te dan el abrigo de otra persona."
+  },
+  "legalOptions": [
+    { "id": "ley25326", "label": "Ley 25.326 (Protección de Datos Personales)" },
+    { "id": "aaip", "label": "AAIP (autoridad de control)" },
+    { "id": "gdpr", "label": "GDPR (si hay clientes europeos)" },
+    { "id": "ley26388", "label": "Ley 26.388 (delitos informáticos)" }
+  ],
+  "decisionOptions": [
+    { "id": "frenar", "label": "Frenar el lanzamiento" },
+    { "id": "horas", "label": "Asignar horas extra para corregir" },
+    { "id": "inversor", "label": "Avisar al inversor" },
+    { "id": "clientes", "label": "Avisar a los clientes" },
+    { "id": "legales", "label": "Consultar a Legales" }
+  ],
+  "calcDefaults": {
+    "clients": 18000,
+    "costPerClient": 8,
+    "probability": 40,
+    "hours": 60,
+    "hourCost": 25
+  },
+  "twists": [
+    {
+      "text": "Un usuario publicó en X que puede ver facturas ajenas. Tiene 300 retuits.",
+      "debrief": "El problema ya es público: comunicación rápida, veraz y con un plan concreto."
+    },
+    {
+      "text": "El inversor pregunta por mail si el pentest encontró algo grave. Responden hoy.",
+      "debrief": "La transparencia con el inversor construye confianza: hallazgo, impacto y plan, sin tecnicismos."
+    },
+    {
+      "text": "El CTO avisa que el dev que conoce ese código está de vacaciones 2 semanas.",
+      "debrief": "Dependencia de una sola persona: medidas temporales (bloquear el endpoint) y documentación."
+    },
+    {
+      "text": "Hackers Shadow les escribe: 'encontramos lo de las facturas; por USD 5.000 no lo publicamos'.",
+      "debrief": "Es extorsión: no se negocia, se denuncia y se informa a Legales."
+    },
+    {
+      "text": "Un cliente grande exige por contrato un certificado de que sus datos están seguros.",
+      "debrief": "Nadie puede certificar seguridad absoluta: se informan controles, re-prueba y compromisos verificables."
+    }
+  ]
+}

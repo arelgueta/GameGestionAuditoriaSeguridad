@@ -1,0 +1,132 @@
+{
+  "id": "shadowit",
+  "situation": "Ventas pega la base de clientes en una IA gratuita para redactar mails. Nadie lo autorizó, pero las ventas subieron 30%.",
+  "columns": [
+    { "id": "prohibir", "label": "Prohibir" },
+    { "id": "reemplazar", "label": "Reemplazar por alternativa aprobada" },
+    { "id": "permitir", "label": "Permitir con reglas" }
+  ],
+  "inventoryItems": [
+    { "id": "chatbot", "text": "Chatbot de IA gratuito usado por ventas con datos de clientes." },
+    { "id": "drive", "text": "Drive personal donde el contador guarda los balances." },
+    {
+      "id": "extension",
+      "text": "Extensión de navegador de capturas con permiso para leer todas las páginas."
+    },
+    {
+      "id": "whatsapp",
+      "text": "Grupo de WhatsApp con proveedores donde se comparten facturas y DNI."
+    },
+    { "id": "transcripcion", "text": "App de transcripción que graba las reuniones de directorio." }
+  ],
+  "products": [
+    {
+      "id": "gratis",
+      "name": "IA Gratis Chat",
+      "setupCost": 0,
+      "perUserMonth": 0,
+      "yearlyFixed": 0,
+      "priceLabel": "USD 0"
+    },
+    {
+      "id": "pro",
+      "name": "IA Empresas Pro",
+      "setupCost": 0,
+      "perUserMonth": 30,
+      "yearlyFixed": 0,
+      "priceLabel": "USD 30/usuario/mes"
+    },
+    {
+      "id": "onprem",
+      "name": "IA On-Premise",
+      "setupCost": 18000,
+      "perUserMonth": 0,
+      "yearlyFixed": 3000,
+      "priceLabel": "USD 18.000 instalación + mantenimiento (estimado USD 3.000/año)"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "precio",
+      "label": "Precio",
+      "tooltip": "Lo que cuesta usarla. Ojo: lo gratis suele pagarse con datos.",
+      "values": {
+        "gratis": "USD 0",
+        "pro": "USD 30/usuario/mes",
+        "onprem": "USD 18.000 instalación + mantenimiento"
+      }
+    },
+    {
+      "id": "entrena",
+      "label": "¿Usa los datos para entrenar?",
+      "tooltip": "Si la herramienta aprende con lo que le escribimos, nuestros datos podrían terminar apareciendo en respuestas a otras personas.",
+      "values": {
+        "gratis": "Sí, por defecto",
+        "pro": "No, por contrato",
+        "onprem": "No, no salen de la empresa"
+      }
+    },
+    {
+      "id": "donde",
+      "label": "Dónde se guardan",
+      "tooltip": "En qué país y por cuánto tiempo quedan guardados los datos. Importa para la Ley 25.326 y las transferencias internacionales.",
+      "values": {
+        "gratis": "No informa",
+        "pro": "Informa país y retención",
+        "onprem": "Servidores propios"
+      }
+    },
+    {
+      "id": "login",
+      "label": "Login corporativo y MFA",
+      "tooltip": "Permite entrar con la cuenta de la empresa y doble factor. Cuando alguien se va, se le corta el acceso en un solo lugar.",
+      "values": { "gratis": "No", "pro": "Sí", "onprem": "Depende de la implementación" }
+    },
+    {
+      "id": "dpa",
+      "label": "Acuerdo de tratamiento de datos",
+      "tooltip": "Un contrato donde el proveedor se compromete a cómo usa, protege y borra nuestros datos.",
+      "values": { "gratis": "Términos estándar", "pro": "Sí, firmable", "onprem": "No aplica" }
+    },
+    {
+      "id": "cert",
+      "label": "Certificaciones",
+      "tooltip": "Auditorías externas (como ISO 27001 o SOC 2) que verifican que el proveedor gestiona la seguridad.",
+      "values": { "gratis": "No informa", "pro": "ISO 27001, SOC 2", "onprem": "No aplica" }
+    },
+    {
+      "id": "facilidad",
+      "label": "Facilidad para el equipo",
+      "tooltip": "Si es difícil de usar, la gente vuelve a la herramienta gratis a escondidas.",
+      "values": { "gratis": "Muy alta", "pro": "Alta", "onprem": "Media" }
+    }
+  ],
+  "cards": [
+    { "id": "c1", "text": "Pedir borradores de textos genéricos", "reference": "verde" },
+    { "id": "c2", "text": "Pedir ideas para una campaña", "reference": "verde" },
+    { "id": "c3", "text": "Resumir una noticia pública", "reference": "verde" },
+    { "id": "c4", "text": "Traducir un texto público", "reference": "verde" },
+    {
+      "id": "c5",
+      "text": "Resumir una minuta interna sin datos personales",
+      "reference": "amarillo"
+    },
+    { "id": "c6", "text": "Analizar ventas agregadas sin nombres", "reference": "amarillo" },
+    {
+      "id": "c7",
+      "text": "Revisar la redacción de una propuesta comercial",
+      "reference": "amarillo"
+    },
+    { "id": "c8", "text": "Pegar la base de clientes", "reference": "rojo" },
+    { "id": "c9", "text": "Pegar contraseñas o claves de API", "reference": "rojo" },
+    { "id": "c10", "text": "Subir balances no publicados", "reference": "rojo" },
+    {
+      "id": "c11",
+      "text": "Pegar código propietario en una herramienta no aprobada",
+      "reference": "rojo"
+    },
+    { "id": "c12", "text": "Cargar DNI o datos de salud de cualquier persona", "reference": "rojo" }
+  ],
+  "defaultRule": "Lo que la IA escribe y vos enviás, lo firmás vos.",
+  "debriefMessage": "Prohibir sin ofrecer alternativa no funciona: la gente lo sigue haciendo a escondidas."
+}

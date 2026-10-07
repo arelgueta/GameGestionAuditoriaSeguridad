@@ -1,0 +1,133 @@
+{
+  "id": "crisis",
+  "startTrust": 100,
+  "noDecisionPoints": -10,
+  "maxWords": 120,
+  "injects": [
+    {
+      "minute": 0,
+      "title": "Pantallas bloqueadas",
+      "text": "Atención al cliente no puede abrir ningún archivo. Aparece una nota que pide 3 BTC en 72 h.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Aislar equipos de la red y convocar al comité de crisis",
+          "points": 10
+        },
+        { "id": "B", "text": "Reiniciar todos los equipos", "points": -20 },
+        { "id": "C", "text": "Esperar a ver si se resuelve solo", "points": -15 },
+        { "id": "D", "text": "Pagar ya para terminar rápido", "points": -25 }
+      ]
+    },
+    {
+      "minute": 5,
+      "title": "Backups cifrados",
+      "text": "El CTO confirma: los backups del mismo servidor también están cifrados. Hay uno en la nube de hace 9 días.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Evaluar restaurar desde la nube y estimar qué se pierde en esos 9 días",
+          "points": 10
+        },
+        { "id": "B", "text": "Restaurar ya sin verificar que el backup esté limpio", "points": -5 },
+        { "id": "C", "text": "Descartar el backup por viejo", "points": -10 }
+      ]
+    },
+    {
+      "minute": 10,
+      "title": "Llama un periodista",
+      "text": "Llama un periodista: \"Me dicen que están hackeados, ¿confirman?\"",
+      "options": [
+        { "id": "A", "text": "Vocero único con mensaje breve y veraz", "points": 10 },
+        { "id": "B", "text": "Negar todo", "points": -15 },
+        { "id": "C", "text": "Explicar los detalles técnicos", "points": -10 },
+        { "id": "D", "text": "\"Sin comentarios\" y cortar", "points": -5 }
+      ]
+    },
+    {
+      "minute": 15,
+      "title": "Publican datos de clientes",
+      "text": "Los atacantes publican una muestra con 50 DNI de clientes.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Asumir robo de datos, sumar a Legales, evaluar aviso a la AAIP y avisar a los afectados",
+          "points": 15
+        },
+        { "id": "B", "text": "Esperar a confirmar todo antes de avisar", "points": -10 },
+        { "id": "C", "text": "No decir nada para no alarmar", "points": -25 }
+      ]
+    },
+    {
+      "minute": 20,
+      "title": "El ciberseguro",
+      "text": "El ciberseguro cubre hasta USD 50.000 pero exige aviso dentro de las 24 h.",
+      "options": [
+        { "id": "A", "text": "Notificar a la aseguradora ahora", "points": 10 },
+        { "id": "B", "text": "Avisar cuando esté resuelto", "points": -20 }
+      ]
+    },
+    {
+      "minute": 25,
+      "title": "El paciente cero",
+      "text": "Un empleado admite que abrió el viernes un adjunto \"factura pendiente\".",
+      "options": [
+        {
+          "id": "A",
+          "text": "Agradecer que lo cuente, sin culpa pública; analizar la causa y planificar capacitación",
+          "points": 10
+        },
+        { "id": "B", "text": "Despedirlo en el acto", "points": -10 },
+        { "id": "C", "text": "Ignorarlo, no es prioridad", "points": -5 }
+      ]
+    },
+    {
+      "minute": 30,
+      "title": "Oferta de rebaja",
+      "text": "Los atacantes bajan el precio a 1,5 BTC \"por 6 horas\".",
+      "debatable": true,
+      "options": [
+        { "id": "A", "text": "No pagar y seguir con la restauración", "points": 0 },
+        { "id": "B", "text": "Pagar", "points": -10 },
+        {
+          "id": "C",
+          "text": "Consultar a Legales, aseguradora y especialistas antes de decidir",
+          "points": 5
+        }
+      ]
+    },
+    {
+      "minute": 35,
+      "title": "Cliente grande en riesgo",
+      "text": "Un cliente grande amenaza con rescindir si no recibe un informe hoy.",
+      "options": [
+        { "id": "A", "text": "Llamada del CEO con hechos confirmados", "points": 10 },
+        { "id": "B", "text": "Mail genérico", "points": -5 },
+        { "id": "C", "text": "Prometer que no se filtró nada", "points": -15 }
+      ]
+    },
+    {
+      "minute": 40,
+      "title": "Vuelve el 70%",
+      "text": "Restauración desde la nube: el 70% de los sistemas vuelve en 48 h.",
+      "options": [
+        { "id": "A", "text": "Comunicado de avance con plan de retorno", "points": 10 },
+        { "id": "B", "text": "Silencio hasta tener el 100%", "points": -5 }
+      ]
+    }
+  ],
+  "paymentArgs": {
+    "against": [
+      "No garantiza recuperar los datos ni que no los publiquen.",
+      "Financia al crimen organizado.",
+      "Marca a la empresa como \"pagadora\" para futuros ataques.",
+      "Posibles problemas legales si el grupo atacante está sancionado."
+    ],
+    "favor": [
+      "Sin un backup válido, la empresa puede quebrar.",
+      "El costo de estar parados puede superar al rescate."
+    ],
+    "lesson": "La decisión de pagar se gana o se pierde meses antes, al invertir (o no) en backups desconectados y probados."
+  },
+  "finalQuestion": "¿Qué tendrían que haber tenido listo antes del lunes?"
+}

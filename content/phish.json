@@ -1,0 +1,243 @@
+{
+  "id": "phish",
+  "osint": {
+    "name": "Lucía Ferraro",
+    "role": "Analista de Compras en TecnoAndes SA",
+    "company": "TecnoAndes SA",
+    "location": "Mendoza, Argentina",
+    "about": "Compras, proveedores y logística. Fan del trekking y del café de especialidad. Mi jefa, Marta Quiroga, dice que soy la reina de las planillas.",
+    "posts": [
+      {
+        "date": "hace 2 días",
+        "text": "¡Volví de Bariloche! Cinco días de nieve, chocolate y cero mails. Gracias Marta Quiroga por cubrirme en la oficina."
+      },
+      {
+        "date": "hace 1 semana",
+        "text": "Orgullosa de nuestro equipo de Compras: cerramos el acuerdo con 3 proveedores nuevos de insumos."
+      },
+      {
+        "date": "hace 2 semanas",
+        "text": "Nos vemos el jueves 14 en el 'TecnoAndes Day' del Hotel Cordillera. ¡Habrá fotos para todos!"
+      },
+      {
+        "date": "hace 1 mes",
+        "text": "Mi nuevo puesto: ahora apruebo las altas de proveedores de la región Cuyo."
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "message": {
+        "channel": "sms",
+        "sender": "CorreoExpress",
+        "senderDetail": "+54 9 11 5555-0192",
+        "time": "09:14",
+        "body": "CorreoExpress: tu paquete no pudo entregarse por falta de pago de aduana. Abona $1.200 hoy para reprogramar la entrega: bit.ly/cx-entrega-pago"
+      },
+      "answer": "PHISH",
+      "signal": "Urgencia + pago pequeño + link acortado",
+      "distractors": [
+        "El SMS menciona una empresa de correo",
+        "El mensaje llegó en horario laboral",
+        "El monto está en pesos argentinos"
+      ],
+      "explanation": "Pide pagar un monto chico con apuro y esconde el destino detrás de un link acortado. Las empresas de correo informan por su web o app oficial."
+    },
+    {
+      "message": {
+        "channel": "mail",
+        "sender": "Banco Nubia",
+        "senderDetail": "avisos@banconubia.com.ar",
+        "subject": "Recordatorio de seguridad",
+        "time": "11:02",
+        "body": "Hola, Lucía:\n\nRecordá: nunca te vamos a pedir tu clave, tu token ni tu código de verificación por mail, teléfono ni redes sociales.\n\nSi alguien te los pide en nuestro nombre, no respondas.\n\nEquipo de Seguridad - Banco Nubia"
+      },
+      "answer": "FISH",
+      "signal": "No pide ninguna acción ni dato",
+      "distractors": [
+        "Viene de un banco",
+        "Tiene la palabra 'seguridad' en el asunto",
+        "Está dirigido por nombre a Lucía"
+      ],
+      "explanation": "Es un aviso informativo: no tiene links, adjuntos ni pedidos. Un mensaje que no te pide nada difícilmente sea una trampa."
+    },
+    {
+      "message": {
+        "channel": "whatsapp",
+        "sender": "Gustavo Ríos (CEO)",
+        "senderDetail": "+54 9 261 555-0143 · número nuevo",
+        "time": "16:47",
+        "body": "Lucía, estoy en una reunión con inversores y no puedo hablar. Necesito que compres 5 gift cards de $50.000 para un regalo corporativo. No lo comentes con nadie, es sorpresa. Después te explico y te devuelvo."
+      },
+      "answer": "PHISH",
+      "signal": "Autoridad + secreto + canal inusual",
+      "distractors": [
+        "El mensaje tiene la foto del CEO",
+        "Usa el nombre real del CEO",
+        "Está escrito en un tono informal"
+      ],
+      "explanation": "Usa la autoridad del CEO, pide secreto y llega por un número nuevo. Ante cualquier pedido de dinero inusual, verificar por otro canal conocido."
+    },
+    {
+      "message": {
+        "channel": "mail",
+        "sender": "Recursos Humanos",
+        "senderDetail": "rrhh@tecnoandes.com.ar",
+        "subject": "Recibo de sueldo de septiembre",
+        "time": "08:30",
+        "body": "Hola, Lucía:\n\nTu recibo de sueldo de septiembre ya está disponible en el portal habitual de empleados.\n\nSaludos,\nRecursos Humanos - TecnoAndes"
+      },
+      "answer": "FISH",
+      "signal": "Canal y dominio habituales",
+      "distractors": [
+        "Habla de dinero",
+        "Llega a principio de mes",
+        "Es corto y sin firma personal"
+      ],
+      "explanation": "Viene del dominio de siempre, no trae adjuntos ni links y remite al portal que ya conocés: es lo esperable."
+    },
+    {
+      "message": {
+        "channel": "mail",
+        "sender": "Insumos del Valle SRL",
+        "senderDetail": "cobranzas@insumosdelvalle-pagos.com",
+        "subject": "IMPORTANTE: nuevos datos bancarios",
+        "time": "10:21",
+        "body": "Estimada Lucía:\n\nLe informamos que cambiamos de banco. A partir de hoy, por favor transfiera las facturas pendientes al nuevo CBU 0000003100099887766554.\n\nLa factura 0045 vence hoy.\n\nSaludos cordiales,\nAdministración"
+      },
+      "answer": "PHISH",
+      "signal": "Cambio de datos de pago (fraude BEC)",
+      "distractors": [
+        "Usa un tono formal",
+        "Menciona un número de factura",
+        "El mail tiene firma de Administración"
+      ],
+      "explanation": "Cualquier cambio de cuenta bancaria es la señal clásica del fraude BEC (compromiso de mail empresarial). Se confirma siempre por un segundo canal ya conocido."
+    },
+    {
+      "message": {
+        "channel": "linkedin",
+        "sender": "Valentina Sosa",
+        "senderDetail": "Talent Partner en GlobalTalentHub · 3er grado",
+        "time": "Ayer",
+        "body": "¡Hola Lucía! Tu perfil es simplemente impresionante. Tenemos una posición Senior remota en dólares, con un sueldo 3 veces mayor al actual. Solo necesitás completar este test técnico: descargá el archivo test_tecnico.zip y ejecutá el instalador antes del viernes.",
+        "attachment": "test_tecnico.zip"
+      },
+      "answer": "PHISH",
+      "signal": "Adjunto ejecutable + halago",
+      "distractors": [
+        "Es una red profesional",
+        "Ofrece trabajo remoto",
+        "La reclutadora tiene foto de perfil"
+      ],
+      "explanation": "El halago desmedido baja las defensas y el .zip con un instalador puede tener malware. Ningún proceso de selección serio pide ejecutar programas desconocidos."
+    },
+    {
+      "message": {
+        "channel": "mail",
+        "sender": "Cuenta Nimbo",
+        "senderDetail": "no-responder@nimbo.com",
+        "subject": "Nuevo inicio de sesión",
+        "time": "22:15",
+        "body": "Detectamos un inicio de sesión nuevo en tu cuenta desde Chrome en Windows.\n\nSi fuiste vos, no tenés que hacer nada. Si no fuiste vos, revisá la actividad desde la app o entrando a tu cuenta como lo hacés siempre.\n\n(Este mensaje no contiene enlaces)"
+      },
+      "answer": "FISH",
+      "signal": "Te pide verificar por tu cuenta",
+      "distractors": [
+        "Llegó de noche",
+        "Habla de un inicio de sesión sospechoso",
+        "Viene de una dirección 'no-responder'"
+      ],
+      "explanation": "No tiene links: te invita a revisar por tu cuenta, por el camino que ya conocés. Es el comportamiento correcto de un servicio legítimo."
+    },
+    {
+      "message": {
+        "channel": "mail",
+        "sender": "Marta Quiroga",
+        "senderDetail": "marta.quiroga@tecnoandes-eventos.com",
+        "subject": "Fotos del TecnoAndes Day (y de Bariloche 😉)",
+        "time": "13:05",
+        "body": "¡Hola Lucía! ¿Cómo volviste de Bariloche? Ya subimos las fotos del TecnoAndes Day del jueves, salís genial. Miralas acá antes de que las publiquemos: tecnoandes-eventos.com/fotos\n\nTe pide iniciar sesión con tu usuario de la empresa.\n\nBesos, Marta"
+      },
+      "answer": "PHISH",
+      "signal": "Phishing dirigido con datos de OSINT",
+      "distractors": [
+        "Lo firma su jefa",
+        "Habla de un evento real de la empresa",
+        "Tiene un emoji en el asunto"
+      ],
+      "explanation": "Usa datos que Lucía publicó (viaje, jefa, evento) para parecer creíble, desde un dominio parecido pero distinto. Es spear phishing: phishing hecho a medida."
+    },
+    {
+      "message": {
+        "channel": "llamada",
+        "sender": "Llamada entrante",
+        "senderDetail": "0800-555-0110 · 'Soporte técnico'",
+        "time": "15:30",
+        "body": "— Hola, Lucía, te hablo de Soporte Técnico. Estamos migrando tu correo y para no perder tus archivos te va a llegar un código por SMS.\n— Ah, sí, me llegó uno ahora.\n— Perfecto, leémelo así terminamos la migración. Es rapidito."
+      },
+      "answer": "PHISH",
+      "signal": "Nadie legítimo pide ese código",
+      "distractors": [
+        "Llamó desde un 0800",
+        "Se presentó como soporte técnico",
+        "La llamada fue corta"
+      ],
+      "explanation": "El código que llega por SMS es la segunda llave de tu cuenta. Quien te lo pide está intentando entrar: nadie de soporte lo necesita."
+    },
+    {
+      "message": {
+        "channel": "mail",
+        "sender": "Nubecita Hosting",
+        "senderDetail": "facturacion@nubecitahosting.com",
+        "subject": "Factura 2026-09 disponible",
+        "time": "07:58",
+        "body": "Hola, TecnoAndes SA:\n\nYa está disponible tu factura mensual del plan Empresas por USD 89, igual a meses anteriores. Podés verla ingresando a tu panel de cliente.\n\nGracias por confiar en Nubecita Hosting."
+      },
+      "answer": "FISH",
+      "signal": "Coincide con algo esperado",
+      "distractors": ["Es una factura", "El monto está en dólares", "Llegó temprano a la mañana"],
+      "explanation": "Es un servicio que la empresa usa, desde su dominio real, con el monto de siempre y sin pedir datos: coincide con lo que se esperaba."
+    },
+    {
+      "message": {
+        "channel": "qr",
+        "sender": "Bar La Bodeguita",
+        "senderDetail": "Sticker con QR pegado sobre el menú",
+        "time": "21:10",
+        "body": "Menú digital: escaneá el QR. La página pide: 'Para ver la carta, iniciá sesión con tu cuenta de correo'.",
+        "link": "menu-labodeguita.login-seguro.net"
+      },
+      "answer": "PHISH",
+      "signal": "Nadie pide login para ver un menú (quishing)",
+      "distractors": ["Es un bar conocido", "Los QR son modernos", "El menú tiene buenos precios"],
+      "explanation": "Un QR pegado encima del original lleva a una página falsa que roba credenciales. Para ver un menú nunca hace falta iniciar sesión."
+    },
+    {
+      "message": {
+        "channel": "audio",
+        "sender": "Mamá",
+        "senderDetail": "+54 9 261 555-0177 · número desconocido",
+        "time": "0:42",
+        "body": "(Transcripción del audio) «Hija, soy yo, se me rompió el celular y te escribo desde este. Tuve un problema con el auto y necesito que me transfieras $300.000 urgente a esta cuenta, después te cuento. No me llames que no tengo señal.»"
+      },
+      "answer": "PHISH",
+      "signal": "Posible clonación de voz con IA: verificar por otro canal",
+      "distractors": [
+        "La voz suena igual a la de su mamá",
+        "Es un audio y no un texto",
+        "El monto es redondo"
+      ],
+      "explanation": "Hoy la voz se puede clonar con IA con pocos segundos de audio. Urgencia + número nuevo + 'no me llames' = verificar llamando al número de siempre o con una palabra clave familiar."
+    }
+  ],
+  "campaign": {
+    "indicators": [
+      "Porcentaje de personas que reportan el simulacro",
+      "Porcentaje de clics en el simulacro (bajar)",
+      "Minutos hasta el primer reporte (bajar)",
+      "Porcentaje de personas capacitadas"
+    ]
+  },
+  "closingMessage": "Castigar al que hace clic genera miedo y menos reportes; premiar al que reporta mejora los indicadores."
+}

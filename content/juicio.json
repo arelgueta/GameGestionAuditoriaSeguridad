@@ -1,0 +1,106 @@
+{
+  "id": "juicio",
+  "caseFile": {
+    "title": "Expediente: AAIP c/ ModaYa SRL s/ filtración de datos personales",
+    "tabs": [
+      {
+        "title": "La empresa",
+        "body": "ModaYa SRL es una tienda online mendocina con 40.000 clientes. Guardaba nombres, DNI, direcciones y los últimos 4 dígitos de las tarjetas en un proveedor cloud económico."
+      },
+      {
+        "title": "Los hechos",
+        "body": "Un empleado del proveedor dejó un backup accesible públicamente durante 3 meses. Un investigador de seguridad lo reportó cuando la base ya circulaba en un foro."
+      },
+      {
+        "title": "La reacción",
+        "body": "ModaYa avisó a sus clientes 21 días después del reporte, recién tras la publicación de una nota periodística."
+      },
+      {
+        "title": "Marco legal",
+        "body": "Ley 25.326 de Protección de Datos Personales (deber de seguridad y confidencialidad, inscripción de bases), AAIP como autoridad de control, Ley 26.388 de delitos informáticos. GDPR como referencia internacional. Casos y marcas ficticias con fines educativos: verificar normativa vigente."
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "title": "Contrato con el proveedor",
+      "body": "No menciona seguridad ni confidencialidad. Limita la responsabilidad del proveedor a un mes de abono."
+    },
+    {
+      "id": "e2",
+      "title": "Registro AAIP",
+      "body": "La base de datos de clientes no está inscripta ante la AAIP."
+    },
+    {
+      "id": "e3",
+      "title": "Mail interno del gerente",
+      "body": "\"No gastemos en seguridad hasta tener más ventas.\""
+    },
+    {
+      "id": "e4",
+      "title": "Política de privacidad",
+      "body": "Copiada de otra web: menciona leyes de otro país y una dirección que no es de ModaYa."
+    },
+    {
+      "id": "e5",
+      "title": "Captura del foro",
+      "body": "Publicación anónima: \"Base de clientes de tienda de ropa de Mendoza, 40k registros, con DNI\". (Ilustración genérica, sin datos reales.)"
+    },
+    {
+      "id": "e6",
+      "title": "Testimonio de una clienta",
+      "body": "\"Me llamaron haciéndose pasar por el banco y sabían mi DNI y mi dirección. Casi caigo.\""
+    },
+    {
+      "id": "e7",
+      "title": "Prueba sorpresa: mail del proveedor",
+      "body": "Mail del proveedor a ModaYa, dos meses antes del reporte: \"Detectamos un problema de configuración en sus backups, por favor contáctennos\". Nadie de ModaYa respondió.",
+      "surprise": true
+    }
+  ],
+  "teams": [
+    {
+      "id": "aaip",
+      "label": "AAIP (acusa)",
+      "mission": "Demostrar qué deberes de la Ley 25.326 incumplió ModaYa y pedir una sanción proporcional."
+    },
+    {
+      "id": "defensa",
+      "label": "Defensa de ModaYa",
+      "mission": "Explicar qué hizo ModaYa, qué responsabilidad recae en el proveedor y qué atenuantes hay."
+    },
+    {
+      "id": "proveedor",
+      "label": "Proveedor cloud",
+      "mission": "Defender su posición según el contrato firmado y su actuación."
+    },
+    {
+      "id": "clientes",
+      "label": "Clientes afectados",
+      "mission": "Mostrar el daño sufrido y pedir reparación."
+    },
+    {
+      "id": "jurado",
+      "label": "Jurado y prensa",
+      "mission": "Escuchar, preguntar, votar el veredicto y escribir el titular."
+    }
+  ],
+  "parties": [
+    { "id": "modaya", "label": "ModaYa SRL" },
+    { "id": "proveedor", "label": "Proveedor cloud" },
+    { "id": "empleado", "label": "Empleado del proveedor" }
+  ],
+  "presets": [
+    { "id": "alegato", "label": "Alegato", "sec": 180 },
+    { "id": "preguntas", "label": "Preguntas", "sec": 120 },
+    { "id": "final", "label": "Alegato final", "sec": 120 }
+  ],
+  "keyPoints": [
+    "El responsable de la base es quien decide recolectar los datos, aunque los aloje otro.",
+    "Los contratos con proveedores deben incluir requisitos de seguridad y aviso de incidentes.",
+    "Inscribir la base e informar a los titulares son deberes, no favores.",
+    "Demorar el aviso multiplica el daño reputacional."
+  ],
+  "closingPrompt": "Escriban 3 cláusulas para el contrato con el proveedor."
+}

@@ -1,0 +1,119 @@
+{
+  "id": "escape",
+  "word": "VERIFICA",
+  "finalQuestion": "¿Cuál de las 8 fallas es la más urgente para el negocio y por qué?",
+  "zones": [
+    {
+      "id": "monitor",
+      "object": "Monitor con post-it",
+      "scene": "En el borde del monitor de recepción hay un post-it amarillo: \"usuario: admin · clave: Junta2026!\".",
+      "flaw": "Contraseña pegada en la pantalla",
+      "correct": "Gestor de contraseñas + MFA",
+      "distractors": [
+        "Cambiar el post-it por uno más chico",
+        "Cambiar la contraseña una vez por año",
+        "Instalar un antivirus nuevo"
+      ],
+      "letter": "V",
+      "category": "personas"
+    },
+    {
+      "id": "pendrive",
+      "object": "Pendrive en el estacionamiento",
+      "scene": "Por la ventana se ve un pendrive tirado en el estacionamiento con una etiqueta: \"Sueldos 2026\".",
+      "flaw": "Cebo para conectarlo",
+      "correct": "No conectar dispositivos desconocidos; entregarlo a sistemas",
+      "distractors": [
+        "Conectarlo en una computadora vieja para ver de quién es",
+        "Formatearlo y usarlo",
+        "Abrirlo solo si el antivirus no avisa nada"
+      ],
+      "letter": "E",
+      "category": "personas"
+    },
+    {
+      "id": "organigrama",
+      "object": "Organigrama publicado",
+      "scene": "En la pared hay una impresión de la web institucional: el organigrama completo con nombres, cargos y mails de cada persona.",
+      "flaw": "Material para OSINT y phishing dirigido",
+      "correct": "Revisar qué se publica + capacitación",
+      "distractors": [
+        "Publicar también los teléfonos para ser más transparentes",
+        "Cerrar la web de la empresa",
+        "Cambiar los mails de todos cada mes"
+      ],
+      "letter": "R",
+      "category": "procesos"
+    },
+    {
+      "id": "factura",
+      "object": "Factura urgente",
+      "scene": "Sobre el escritorio hay una factura de un proveedor con un CBU tachado y uno nuevo escrito a mano. Nota: \"URGENTE, pagar hoy\".",
+      "flaw": "Fraude de pago",
+      "correct": "Verificar cambios bancarios por un segundo canal",
+      "distractors": [
+        "Pagar rápido para no perder al proveedor",
+        "Responder el mismo mail pidiendo confirmación",
+        "Pagar la mitad y esperar"
+      ],
+      "letter": "I",
+      "category": "procesos"
+    },
+    {
+      "id": "accesos",
+      "object": "Lista de accesos",
+      "scene": "En un clipboard está la lista de usuarios activos del sistema. Uno es de Pablo, que renunció hace 6 meses.",
+      "flaw": "Cuenta activa de ex-empleado",
+      "correct": "Proceso de baja (offboarding)",
+      "distractors": [
+        "Dejarla por si Pablo vuelve",
+        "Cambiarle la contraseña a Pablo",
+        "Revisarla cuando haya una auditoría externa"
+      ],
+      "letter": "F",
+      "category": "procesos"
+    },
+    {
+      "id": "drive",
+      "object": "Carpeta compartida",
+      "scene": "La notebook muestra una carpeta \"Clientes 2026\" compartida con \"cualquiera que tenga el enlace\". Tiene DNI y direcciones.",
+      "flaw": "Exposición de datos personales",
+      "correct": "Permisos mínimos + revisión periódica",
+      "distractors": [
+        "Cambiar el nombre de la carpeta para que no llame la atención",
+        "Mandar el enlace solo por WhatsApp",
+        "Agregar una contraseña en el nombre del archivo"
+      ],
+      "letter": "I",
+      "category": "tecnologia"
+    },
+    {
+      "id": "calendario",
+      "object": "Calendario de backups",
+      "scene": "En la pared, el calendario de backups dice: \"Backup diario ✔ · Última prueba de restauración: nunca\".",
+      "flaw": "Backups no probados",
+      "correct": "Pruebas de restauración periódicas",
+      "distractors": [
+        "Hacer backups dos veces por día",
+        "Comprar un disco más grande",
+        "Guardar el backup en el mismo servidor"
+      ],
+      "letter": "C",
+      "category": "procesos"
+    },
+    {
+      "id": "contrato",
+      "object": "Contrato de hosting",
+      "scene": "En el archivero asoma el contrato con el proveedor de hosting: precio y plazo, pero ni una palabra sobre confidencialidad ni seguridad.",
+      "flaw": "Riesgo de terceros",
+      "correct": "NDA y requisitos de seguridad en contratos",
+      "distractors": [
+        "Cambiar al proveedor más barato",
+        "Confiar porque es un proveedor grande",
+        "Pedirle al proveedor una promesa verbal"
+      ],
+      "letter": "A",
+      "category": "procesos"
+    }
+  ]
+}
