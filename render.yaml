@@ -1,0 +1,25 @@
+# Blueprint de Render: un único Web Service que sirve API + sockets + frontend.
+services:
+  - type: web
+    name: ciberjunta
+    runtime: node
+    plan: free # cambiar a "starter" para evitar que el servicio se duerma
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: '24'
+      - key: HOST_PIN_SALT
+        generateValue: true
+      - key: SESSION_TTL_MINUTES
+        value: '240'
+      # Persistencia opcional: descomentar y conectar una base PostgreSQL de Render.
+      # - key: DATABASE_URL
+      #   fromDatabase:
+      #     name: ciberjunta-db
+      #     property: connectionString

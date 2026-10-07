@@ -1,0 +1,41 @@
+{
+  "name": "ciberjunta",
+  "private": true,
+  "version": "0.1.0",
+  "description": "CiberJunta: juegos de seguridad de la información para futuros gerentes",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "apps/server",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c blue,magenta \"npm run dev -w @ciberjunta/server\" \"npm run dev -w @ciberjunta/web\"",
+    "build": "npm run build -w @ciberjunta/web && npm run build -w @ciberjunta/server",
+    "start": "node apps/server/dist/index.js",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "load-test": "node scripts/load-test.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "concurrently": "^10.0.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.0.0",
+    "prettier": "^3.9.0",
+    "socket.io-client": "^4.8.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}
