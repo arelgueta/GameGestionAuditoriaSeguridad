@@ -20,7 +20,9 @@ export interface Ctx<C> {
   toast(text: string): void;
 }
 
-export type ModuleRow = Omit<ExportRow, 'grupo' | 'startup'> & { groupId: string | null };
+export type ModuleRow = Omit<ExportRow, 'dinamica' | 'grupo' | 'startup'> & {
+  groupId: string | null;
+};
 
 /**
  * Contrato de cada dinámica. El motor clona el estado antes de llamar a

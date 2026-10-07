@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ROLE_LABELS, toCsv, type RoleId, type StatePayload } from '@ciberjunta/shared';
+import {
+  CATALOG,
+  MAX_ACTIVITIES,
+  ROLE_LABELS,
+  toCsv,
+  type CatalogEntry,
+  type GameId,
+  type RoleId,
+  type StatePayload,
+} from '@ciberjunta/shared';
 import { downloadBlob, downloadExport, hostLogin } from '../lib/api';
 import { SessionProvider, useSession, useSocketSession } from '../lib/session';
 import { keys, load, remove, save } from '../lib/storage';
@@ -8,6 +17,12 @@ import { toast } from '../lib/toast';
 import { unlockAudio } from '../lib/sound';
 import { AsyncButton, Countdown, cx } from '../components/ui';
 import { ConnectionBadge, JoinQr, joinUrl, PhaseSteps, SoundToggle } from '../components/chrome';
+import {
+  ActivityFields,
+  GamePicker,
+  toActivityInput,
+  useActivityDraft,
+} from '../components/ActivityForm';
 import { GAMES } from '../games';
 
 type HostPayload = Extract<StatePayload, { role: 'host' }>;
@@ -100,11 +115,7 @@ function LocalBackupExport({ code }: { code: string }) {
 
 function exportLocal(code: string, p: HostPayload, format: 'csv' | 'json') {
   if (format === 'csv')
-    downloadBlob(
-      toCsv(p.rows, { sesion: code, dinamica: p.meta.gameId }),
-      `ciberjunta-${code}-local.csv`,
-      'text/csv',
-    );
+    downloadBlob(toCsv(p.rows, { sesion: code }), `ciberjunta-${code}-local.csv`, 'text/csv');
   else
     downloadBlob(
       JSON.stringify(
@@ -272,10 +283,11 @@ function HostConsole({
               {meta.status === 'lobby' ? (
                 <LobbyHost code={code} payload={payload} />
               ) : (
-                <game.Host view={payload.view} meta={meta} />
+                <game.Host key={meta.activityIndex} view={payload.view} meta={meta} />
               )}
             </div>
             <aside className="space-y-6">
+              <ActivitiesPanel payload={payload} />
               <GroupsPanel payload={payload} />
               <ExportPanel code={code} token={token} payload={payload} />
             </aside>
@@ -304,6 +316,124 @@ function LobbyHost({ code, payload }: { code: string; payload: HostPayload }) {
         {payload.meta.expectedGroups} esperados.
       </p>
     </section>
+  );
+}
+
+/** Dinámicas cargadas en la sesión: el docente elige cuál ven los grupos o suma otra. */
+function ActivitiesPanel({ payload }: { payload: HostPayload }) {
+  const { hostAct } = useSession();
+  const { meta } = payload;
+  const [adding, setAdding] = useState(false);
+  const [gameId, setGameId] = useState<GameId | null>(null);
+  const entry = CATALOG.find((c) => c.id === gameId) ?? null;
+  const close = () => {
+    setAdding(false);
+    setGameId(null);
+  };
+  return (
+    <section className="card" aria-labelledby="dinamicas-title">
+      <h2 id="dinamicas-title" className="mb-1 text-xl">
+        Dinámicas de esta clase
+      </h2>
+      <p className="mb-3 text-sm text-slate-700">
+        Mismo código para todas. Al cambiar, la dinámica anterior queda en pausa y conserva sus
+        respuestas.
+      </p>
+      <ol className="mb-3 space-y-2">
+        {meta.activities.map((a) => {
+          const current = a.index === meta.activityIndex;
+          return (
+            <li
+              key={a.index}
+              aria-current={current ? 'true' : undefined}
+              className={cx(
+                'rounded-xl border p-3',
+                current ? 'border-brand-500 bg-brand-50' : 'border-slate-200',
+              )}
+            >
+              <p className="font-bold">
+                {a.index + 1}. {a.title}
+              </p>
+              <p className="text-sm text-slate-600">
+                {a.status === 'lobby'
+                  ? 'Sin iniciar'
+                  : `Fase ${a.phaseIndex + 1}/${a.phaseCount}: ${a.phaseTitle}`}
+              </p>
+              {current ? (
+                <p className="mt-1 text-sm font-semibold text-brand-800">
+                  <span aria-hidden="true">● </span>En curso: la ven los grupos
+                </p>
+              ) : (
+                <AsyncButton
+                  className="btn-secondary btn-sm mt-2"
+                  onClick={() => hostAct({ type: 'switchActivity', index: a.index })}
+                >
+                  Mostrar a los grupos
+                </AsyncButton>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {!adding ? (
+        meta.activities.length < MAX_ACTIVITIES && (
+          <button type="button" className="btn-primary btn-sm" onClick={() => setAdding(true)}>
+            + Agregar otra dinámica
+          </button>
+        )
+      ) : (
+        <div className="rounded-xl bg-slate-50 p-3">
+          {!entry ? (
+            <>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="font-semibold">Elijan la dinámica</p>
+                <button type="button" className="btn-ghost btn-sm" onClick={close}>
+                  Cancelar
+                </button>
+              </div>
+              <GamePicker onPick={setGameId} compact />
+            </>
+          ) : (
+            <AddActivityForm
+              key={entry.id}
+              entry={entry}
+              onBack={() => setGameId(null)}
+              onDone={close}
+            />
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AddActivityForm({
+  entry,
+  onBack,
+  onDone,
+}: {
+  entry: CatalogEntry;
+  onBack: () => void;
+  onDone: () => void;
+}) {
+  const { hostAct } = useSession();
+  const [draft, setDraft] = useActivityDraft(entry);
+  return (
+    <div>
+      <button type="button" className="btn-ghost btn-sm mb-2" onClick={onBack}>
+        ← Elegir otra
+      </button>
+      <h3 className="mb-3 text-lg font-bold">{entry.title}</h3>
+      <ActivityFields entry={entry} draft={draft} onChange={setDraft} />
+      <AsyncButton
+        className="btn-primary w-full"
+        onClick={async () => {
+          if (await hostAct({ type: 'addActivity', ...toActivityInput(entry, draft) })) onDone();
+        }}
+      >
+        Cargar y mostrar a los grupos
+      </AsyncButton>
+    </div>
   );
 }
 

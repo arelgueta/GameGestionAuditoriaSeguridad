@@ -148,6 +148,7 @@ describe('CSV', () => {
   it('neutraliza fórmulas y escapa comas', () => {
     const csv = toCsv([
       {
+        dinamica: 'phish',
         grupo: '=HYPERLINK("x")',
         startup: 'A, B',
         fase: 'f',

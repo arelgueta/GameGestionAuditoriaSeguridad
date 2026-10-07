@@ -53,7 +53,7 @@ export function ScreenPage() {
           {meta.status === 'lobby' ? (
             <Lobby meta={meta} />
           ) : (
-            <game.Screen view={payload.view} meta={meta} />
+            <game.Screen key={meta.activityIndex} view={payload.view} meta={meta} />
           )}
         </main>
         <footer className="flex items-center gap-4 px-8 pb-6">

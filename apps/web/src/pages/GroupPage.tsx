@@ -231,7 +231,7 @@ function GroupSession({
               </p>
             </div>
           ) : (
-            <game.Group view={payload.view} meta={meta} />
+            <game.Group key={meta.activityIndex} view={payload.view} meta={meta} />
           )}
         </main>
         <footer className="mx-auto max-w-3xl px-4">

@@ -1,21 +1,26 @@
 import type { Server } from 'socket.io';
 import {
   catalogEntry,
+  MAX_ACTIVITIES,
   toCsv,
+  type ActivityInfo,
+  type ActivityInput,
   type ClientToServer,
   type CreateSessionInput,
   type Cue,
   type ExportRow,
   type GameId,
   type GroupInfo,
-  type HostAction,
+  type HostActionInput,
   type HostGroupRow,
   type PhaseInfo,
   type RoleId,
   type ServerToClient,
   type SessionMeta,
   type StatePayload,
+  activitySchema,
   createSessionSchema,
+  hostActionSchema,
 } from '@ciberjunta/shared';
 import { config } from '../config.js';
 import { loadContent } from '../content.js';
@@ -43,17 +48,14 @@ export interface StoredGroup {
   joinedAt: number;
 }
 
-export interface SessionData {
-  code: string;
+/**
+ * Una dinámica dentro de la sesión. Cada una tiene su propio reloj, fases,
+ * semilla y estado; los grupos, el código y el PIN son de la sesión. Así el
+ * docente usa un único código para varias dinámicas en la misma clase.
+ */
+export interface Activity {
   gameId: GameId;
   createdAt: number;
-  lastActivity: number;
-  pinHash: string;
-  pinSalt: string;
-  hostTokenHashes: string[];
-  failedPins: number;
-  lockedUntil: number;
-  expectedGroups: number;
   phaseDurations: Record<string, number>;
   config: Record<string, boolean | number | string>;
   seed: number;
@@ -63,11 +65,69 @@ export interface SessionData {
   paused: boolean;
   pausedAt: number | null;
   pausedTotal: number;
+  /** La pausa la puso el motor al cambiar de dinámica: se levanta sola al volver. */
+  autoPaused: boolean;
   phaseEndsAt: number | null;
-  spotlight: { groupId: string; endsAt: number | null } | null;
-  groups: StoredGroup[];
   state: unknown;
   content: unknown;
+}
+
+export interface SessionData {
+  code: string;
+  createdAt: number;
+  lastActivity: number;
+  pinHash: string;
+  pinSalt: string;
+  hostTokenHashes: string[];
+  failedPins: number;
+  lockedUntil: number;
+  expectedGroups: number;
+  spotlight: { groupId: string; endsAt: number | null } | null;
+  groups: StoredGroup[];
+  activities: Activity[];
+  /** Índice de la dinámica que ven los grupos y la pantalla. */
+  current: number;
+}
+
+/** Sesiones guardadas antes de soportar varias dinámicas (una sola, en la raíz). */
+type LegacySessionData = Omit<SessionData, 'activities' | 'current'> &
+  Omit<Activity, 'createdAt' | 'autoPaused'>;
+
+export function migrateSession(raw: SessionData | LegacySessionData): SessionData {
+  if ('activities' in raw && Array.isArray(raw.activities)) return raw;
+  const old = raw as LegacySessionData;
+  const activity: Activity = {
+    gameId: old.gameId,
+    createdAt: old.createdAt,
+    phaseDurations: old.phaseDurations,
+    config: old.config,
+    seed: old.seed,
+    rngState: old.rngState,
+    status: old.status,
+    phaseIndex: old.phaseIndex,
+    paused: old.paused,
+    pausedAt: old.pausedAt,
+    pausedTotal: old.pausedTotal,
+    autoPaused: false,
+    phaseEndsAt: old.phaseEndsAt,
+    state: old.state,
+    content: old.content,
+  };
+  return {
+    code: old.code,
+    createdAt: old.createdAt,
+    lastActivity: old.lastActivity,
+    pinHash: old.pinHash,
+    pinSalt: old.pinSalt,
+    hostTokenHashes: old.hostTokenHashes,
+    failedPins: old.failedPins,
+    lockedUntil: old.lockedUntil,
+    expectedGroups: old.expectedGroups,
+    spotlight: old.spotlight,
+    groups: old.groups,
+    activities: [activity],
+    current: 0,
+  };
 }
 
 type IO = Server<ClientToServer, ServerToClient>;
@@ -93,8 +153,9 @@ export class SessionManager {
   async restore() {
     const all = await this.storage.loadAll();
     const now = Date.now();
-    for (const s of all) {
-      if (now - s.lastActivity < config.sessionTtlMs) this.sessions.set(s.code, s);
+    for (const raw of all) {
+      if (now - raw.lastActivity < config.sessionTtlMs)
+        this.sessions.set(raw.code, migrateSession(raw));
     }
     if (all.length) console.log(`[sesiones] restauradas ${this.sessions.size} sesiones`);
   }
@@ -115,19 +176,24 @@ export class SessionManager {
     return this.sessions.has(code);
   }
 
-  module(s: SessionData): AnyModule {
-    return getModule(s.gameId);
+  /** Dinámica activa de la sesión. */
+  act(s: SessionData): Activity {
+    return s.activities[s.current];
   }
 
-  gameNow(s: SessionData, real = Date.now()): number {
-    const pausedNow = s.paused && s.pausedAt !== null ? real - s.pausedAt : 0;
-    return real - s.pausedTotal - pausedNow;
+  module(a: Activity): AnyModule {
+    return getModule(a.gameId);
   }
 
-  phases(s: SessionData): PhaseInfo[] {
-    return catalogEntry(s.gameId).phases.map((p) => ({
+  gameNow(a: Activity, real = Date.now()): number {
+    const pausedNow = a.paused && a.pausedAt !== null ? real - a.pausedAt : 0;
+    return real - a.pausedTotal - pausedNow;
+  }
+
+  phases(a: Activity): PhaseInfo[] {
+    return catalogEntry(a.gameId).phases.map((p) => ({
       ...p,
-      durationSec: s.phaseDurations[p.id] ?? p.durationSec,
+      durationSec: a.phaseDurations[p.id] ?? p.durationSec,
     }));
   }
 
@@ -144,30 +210,35 @@ export class SessionManager {
       }));
   }
 
-  makeCtx(s: SessionData, effects?: { cues: Cue[]; toasts: string[] }): Ctx<unknown> {
+  makeCtx(
+    s: SessionData,
+    effects?: { cues: Cue[]; toasts: string[] },
+    a: Activity = this.act(s),
+  ): Ctx<unknown> {
     const groups = this.activeGroups(s);
-    const phases = this.phases(s);
+    const phases = this.phases(a);
     return {
-      now: this.gameNow(s),
-      rng: makeRng(s),
-      content: s.content,
-      config: s.config,
+      now: this.gameNow(a),
+      rng: makeRng(a),
+      content: a.content,
+      config: a.config,
       groups,
-      phaseId: s.phaseIndex >= 0 ? phases[s.phaseIndex].id : 'lobby',
-      phaseEndsAt: s.phaseEndsAt,
+      phaseId: a.phaseIndex >= 0 ? phases[a.phaseIndex].id : 'lobby',
+      phaseEndsAt: a.phaseEndsAt,
       groupName: (id) => s.groups.find((g) => g.id === id)?.name ?? '¿?',
       cue: (c) => effects?.cues.push(c),
       toast: (t) => effects?.toasts.push(t),
     };
   }
 
-  /** Ejecuta una modificación del estado del módulo de forma transaccional. */
+  /** Ejecuta una modificación del estado de la dinámica activa de forma transaccional. */
   private mutate(s: SessionData, fn: (draft: unknown, ctx: Ctx<unknown>) => void) {
     const effects = { cues: [] as Cue[], toasts: [] as string[] };
-    const draft = structuredClone(s.state);
+    const a = this.act(s);
+    const draft = structuredClone(a.state);
     const ctx = this.makeCtx(s, effects);
     fn(draft, ctx);
-    s.state = draft;
+    a.state = draft;
     s.lastActivity = Date.now();
     for (const c of effects.cues) this.io?.to(rooms.all(s.code)).emit('cue', c);
     for (const t of effects.toasts)
@@ -185,6 +256,33 @@ export class SessionManager {
       );
     let code = newCode();
     while (this.sessions.has(code)) code = newCode();
+    const salt = newSalt();
+    const hostToken = newToken();
+    const now = Date.now();
+    const s: SessionData = {
+      code,
+      createdAt: now,
+      lastActivity: now,
+      pinHash: hashPin(parsed.pin, salt),
+      pinSalt: salt,
+      hostTokenHashes: [hashToken(hostToken)],
+      failedPins: 0,
+      lockedUntil: 0,
+      expectedGroups: parsed.expectedGroups,
+      spotlight: null,
+      groups: [],
+      activities: [],
+      current: 0,
+    };
+    s.activities.push(this.newActivity(s, parsed));
+    this.sessions.set(code, s);
+    this.markDirty(code);
+    return { code, hostToken };
+  }
+
+  /** Arma una dinámica nueva (en sala de espera) con su configuración validada. */
+  private newActivity(s: SessionData, input: ActivityInput): Activity {
+    const parsed = activitySchema.parse(input);
     const entry = catalogEntry(parsed.gameId);
     const cfg: Record<string, boolean | number | string> = {};
     for (const f of entry.config) {
@@ -201,22 +299,10 @@ export class SessionManager {
       if (d && p.durationSec !== null) durations[p.id] = d;
     }
     const mod = getModule(parsed.gameId);
-    const content = mod.parseContent(loadContent(parsed.gameId));
-    const salt = newSalt();
-    const hostToken = newToken();
     const seed = newSeed();
-    const now = Date.now();
-    const s: SessionData = {
-      code,
+    const a: Activity = {
       gameId: parsed.gameId,
-      createdAt: now,
-      lastActivity: now,
-      pinHash: hashPin(parsed.pin, salt),
-      pinSalt: salt,
-      hostTokenHashes: [hashToken(hostToken)],
-      failedPins: 0,
-      lockedUntil: 0,
-      expectedGroups: parsed.expectedGroups,
+      createdAt: Date.now(),
       phaseDurations: durations,
       config: cfg,
       seed,
@@ -226,16 +312,13 @@ export class SessionManager {
       paused: false,
       pausedAt: null,
       pausedTotal: 0,
+      autoPaused: false,
       phaseEndsAt: null,
-      spotlight: null,
-      groups: [],
       state: null,
-      content,
+      content: mod.parseContent(loadContent(parsed.gameId)),
     };
-    s.state = mod.init(this.makeCtx(s));
-    this.sessions.set(code, s);
-    this.markDirty(code);
-    return { code, hostToken };
+    a.state = mod.init(this.makeCtx(s, undefined, a));
+    return a;
   }
 
   hostLogin(code: string, pin: string): string {
@@ -314,44 +397,47 @@ export class SessionManager {
 
   // ------------------------------------------------------------ acciones
 
-  hostAction(code: string, action: HostAction) {
+  hostAction(code: string, input: HostActionInput) {
+    const action = hostActionSchema.parse(input);
     const s = this.get(code);
-    const mod = this.module(s);
-    const phases = this.phases(s);
-    const now = this.gameNow(s);
+    const a = this.act(s);
+    const mod = this.module(a);
+    const phases = this.phases(a);
+    const now = this.gameNow(a);
     const enterPhase = (index: number) => {
-      s.phaseIndex = index;
+      a.phaseIndex = index;
       const d = phases[index].durationSec;
-      s.phaseEndsAt = d ? this.gameNow(s) + d * 1000 : null;
+      a.phaseEndsAt = d ? this.gameNow(a) + d * 1000 : null;
       s.spotlight = null;
       if (mod.onPhaseEnter) this.mutate(s, (st, ctx) => mod.onPhaseEnter!(st, ctx));
       this.io?.to(rooms.all(code)).emit('cue', 'bell');
     };
     switch (action.type) {
       case 'start':
-        if (s.status !== 'lobby') throw new GameError('La dinámica ya empezó.');
-        s.status = 'running';
+        if (a.status !== 'lobby') throw new GameError('La dinámica ya empezó.');
+        a.status = 'running';
         enterPhase(0);
         break;
       case 'nextPhase':
-        if (s.status === 'lobby') throw new GameError('Primero inicien la dinámica.');
-        if (s.phaseIndex >= phases.length - 1) throw new GameError('Ya están en la última fase.');
-        if (s.paused) this.resume(s);
-        enterPhase(s.phaseIndex + 1);
+        if (a.status === 'lobby') throw new GameError('Primero inicien la dinámica.');
+        if (a.phaseIndex >= phases.length - 1) throw new GameError('Ya están en la última fase.');
+        if (a.paused) this.resume(a);
+        enterPhase(a.phaseIndex + 1);
         break;
       case 'pause':
-        if (!s.paused) {
-          s.paused = true;
-          s.pausedAt = Date.now();
+        if (!a.paused) {
+          a.paused = true;
+          a.pausedAt = Date.now();
         }
+        a.autoPaused = false;
         break;
       case 'resume':
-        this.resume(s);
+        this.resume(a);
         break;
       case 'addTime': {
-        const base = s.phaseEndsAt && s.phaseEndsAt > now ? s.phaseEndsAt : now;
+        const base = a.phaseEndsAt && a.phaseEndsAt > now ? a.phaseEndsAt : now;
         const next = base + action.seconds * 1000;
-        s.phaseEndsAt = next > now ? next : now;
+        a.phaseEndsAt = next > now ? next : now;
         break;
       }
       case 'spotlight': {
@@ -379,36 +465,74 @@ export class SessionManager {
       }
       case 'game':
         if (!mod.onHostAction) throw new GameError('Esta dinámica no tiene acciones especiales.');
-        if (s.status !== 'running') throw new GameError('Primero inicien la dinámica.');
+        if (a.status !== 'running') throw new GameError('Primero inicien la dinámica.');
         this.mutate(s, (st, ctx) => mod.onHostAction!(st, action.action, ctx));
+        break;
+      case 'addActivity': {
+        if (s.activities.length >= MAX_ACTIVITIES)
+          throw new GameError(`Una sesión admite hasta ${MAX_ACTIVITIES} dinámicas.`);
+        s.activities.push(this.newActivity(s, action));
+        this.switchTo(s, s.activities.length - 1);
+        break;
+      }
+      case 'switchActivity':
+        if (!s.activities[action.index]) throw new GameError('Esa dinámica no existe.');
+        if (action.index === s.current) throw new GameError('Ya están en esa dinámica.');
+        this.switchTo(s, action.index);
         break;
     }
     s.lastActivity = Date.now();
     this.markDirty(code);
   }
 
-  private resume(s: SessionData) {
-    if (s.paused && s.pausedAt !== null) s.pausedTotal += Date.now() - s.pausedAt;
-    s.paused = false;
-    s.pausedAt = null;
+  /**
+   * Cambia la dinámica que ven los grupos. La que queda atrás se pausa (sus
+   * plazos se congelan) y se reanuda sola al volver, salvo que el docente la
+   * hubiera pausado a mano.
+   */
+  private switchTo(s: SessionData, index: number) {
+    const prev = this.act(s);
+    if (prev.status === 'running' && !prev.paused) {
+      prev.paused = true;
+      prev.pausedAt = Date.now();
+      prev.autoPaused = true;
+    }
+    s.current = index;
+    s.spotlight = null;
+    const next = this.act(s);
+    if (next.autoPaused) this.resume(next);
+    this.io?.to(rooms.all(s.code)).emit('cue', 'bell');
+    this.io
+      ?.to(rooms.all(s.code))
+      .emit('toast', { kind: 'info', text: `Dinámica: ${catalogEntry(next.gameId).title}` });
+  }
+
+  private resume(a: Activity) {
+    if (a.paused && a.pausedAt !== null) a.pausedTotal += Date.now() - a.pausedAt;
+    a.paused = false;
+    a.pausedAt = null;
+    a.autoPaused = false;
   }
 
   groupAction(code: string, groupId: string, action: unknown) {
     const s = this.get(code);
-    if (s.status !== 'running') throw new GameError('La dinámica todavía no empezó.');
-    if (s.paused) throw new GameError('La sesión está en pausa.');
-    const mod = this.module(s);
+    const a = this.act(s);
+    if (a.status !== 'running') throw new GameError('La dinámica todavía no empezó.');
+    if (a.paused) throw new GameError('La sesión está en pausa.');
+    const mod = this.module(a);
     this.mutate(s, (st, ctx) => mod.onGroupAction(st, groupId, action, ctx));
   }
 
+  /** Solo avanza la dinámica activa: las demás están en sala de espera o en pausa. */
   tick() {
     for (const s of this.sessions.values()) {
-      if (s.status !== 'running' || s.paused) continue;
-      const mod = this.module(s);
+      const a = this.act(s);
+      if (a.status !== 'running' || a.paused) continue;
+      const mod = this.module(a);
       if (!mod.onTick) continue;
       try {
         const ctx = this.makeCtx(s);
-        if (mod.needsTick && !mod.needsTick(s.state, ctx)) continue;
+        if (mod.needsTick && !mod.needsTick(a.state, ctx)) continue;
         let changed = false;
         this.mutateQuiet(s, (st, c) => {
           changed = mod.onTick!(st, c);
@@ -422,9 +546,10 @@ export class SessionManager {
 
   private mutateQuiet(s: SessionData, fn: (draft: unknown, ctx: Ctx<unknown>) => void) {
     const effects = { cues: [] as Cue[], toasts: [] as string[] };
-    const draft = structuredClone(s.state);
+    const a = this.act(s);
+    const draft = structuredClone(a.state);
     fn(draft, this.makeCtx(s, effects));
-    s.state = draft;
+    a.state = draft;
     for (const c of effects.cues) this.io?.to(rooms.all(s.code)).emit('cue', c);
     for (const t of effects.toasts)
       this.io?.to(rooms.all(s.code)).emit('toast', { kind: 'info', text: t });
@@ -444,8 +569,24 @@ export class SessionManager {
 
   // ------------------------------------------------------------ vistas
 
+  activities(s: SessionData): ActivityInfo[] {
+    return s.activities.map((a, index) => {
+      const phases = catalogEntry(a.gameId).phases;
+      return {
+        index,
+        gameId: a.gameId,
+        title: catalogEntry(a.gameId).title,
+        status: a.status,
+        phaseIndex: a.phaseIndex,
+        phaseCount: phases.length,
+        phaseTitle: phases[a.phaseIndex]?.title ?? null,
+      };
+    });
+  }
+
   meta(s: SessionData, ctx: Ctx<unknown>): SessionMeta {
-    const mod = this.module(s);
+    const a = this.act(s);
+    const mod = this.module(a);
     let spotlight: SessionMeta['spotlight'] = null;
     if (s.spotlight) {
       const g = s.groups.find((x) => x.id === s.spotlight!.groupId);
@@ -455,75 +596,97 @@ export class SessionManager {
           groupName: g.name,
           startup: g.startup,
           endsAt: s.spotlight.endsAt,
-          items: mod.summarize(s.state, g.id, ctx),
+          items: mod.summarize(a.state, g.id, ctx),
         };
     }
     return {
       code: s.code,
-      gameId: s.gameId,
-      gameTitle: catalogEntry(s.gameId).title,
-      status: s.status,
-      phases: this.phases(s),
-      phaseIndex: s.phaseIndex,
-      paused: s.paused,
+      gameId: a.gameId,
+      gameTitle: catalogEntry(a.gameId).title,
+      activityIndex: s.current,
+      activities: this.activities(s),
+      status: a.status,
+      phases: this.phases(a),
+      phaseIndex: a.phaseIndex,
+      paused: a.paused,
       serverNow: ctx.now,
-      phaseEndsAt: s.phaseEndsAt,
+      phaseEndsAt: a.phaseEndsAt,
       groups: ctx.groups,
       spotlight,
       expectedGroups: s.expectedGroups,
     };
   }
 
-  rows(s: SessionData, ctx: Ctx<unknown>): ExportRow[] {
-    const mod = this.module(s);
-    return mod.exportRows(s.state, ctx).map(({ groupId, ...r }) => {
-      const g = groupId ? s.groups.find((x) => x.id === groupId) : null;
-      return { grupo: g ? g.name : '(sesión)', startup: g ? g.startup : '', ...r };
+  /**
+   * Nombre de la dinámica en la exportación. Si se jugó dos veces la misma, la
+   * segunda queda como "phish #2" para poder separarlas en la planilla.
+   */
+  private activityLabel(s: SessionData, index: number): string {
+    const id = s.activities[index].gameId;
+    const n = s.activities.slice(0, index + 1).filter((a) => a.gameId === id).length;
+    return n > 1 ? `${id} #${n}` : id;
+  }
+
+  /** Filas de exportación de una dinámica (por defecto, de todas las de la sesión). */
+  rows(s: SessionData, only?: number): ExportRow[] {
+    const out: ExportRow[] = [];
+    s.activities.forEach((a, index) => {
+      if (only !== undefined && only !== index) return;
+      const dinamica = this.activityLabel(s, index);
+      const ctx = this.makeCtx(s, undefined, a);
+      for (const { groupId, ...r } of this.module(a).exportRows(a.state, ctx)) {
+        const g = groupId ? s.groups.find((x) => x.id === groupId) : null;
+        out.push({ dinamica, grupo: g ? g.name : '(sesión)', startup: g ? g.startup : '', ...r });
+      }
     });
+    return out;
   }
 
   hostPayload(s: SessionData): StatePayload {
+    const a = this.act(s);
     const ctx = this.makeCtx(s);
-    const mod = this.module(s);
+    const mod = this.module(a);
     const groups: HostGroupRow[] = ctx.groups.map((g) => {
       const st =
-        s.status === 'running'
-          ? mod.status(s.state, g.id, ctx)
+        a.status === 'running'
+          ? mod.status(a.state, g.id, ctx)
           : { text: 'En la sala de espera', responded: false };
       return {
         id: g.id,
         status: st.text,
         responded: st.responded,
-        summary: mod.summarize(s.state, g.id, ctx),
+        summary: mod.summarize(a.state, g.id, ctx),
       };
     });
     return {
       role: 'host',
       meta: this.meta(s, ctx),
-      view: mod.hostView(s.state, ctx),
+      view: mod.hostView(a.state, ctx),
       groups,
-      rows: this.rows(s, ctx),
-      seed: s.seed,
+      rows: this.rows(s),
+      seed: a.seed,
     };
   }
 
   screenPayload(s: SessionData): StatePayload {
+    const a = this.act(s);
     const ctx = this.makeCtx(s);
     return {
       role: 'screen',
       meta: this.meta(s, ctx),
-      view: this.module(s).publicView(s.state, ctx),
+      view: this.module(a).publicView(a.state, ctx),
     };
   }
 
   groupPayload(s: SessionData, groupId: string): StatePayload | null {
+    const a = this.act(s);
     const ctx = this.makeCtx(s);
     const me = ctx.groups.find((g) => g.id === groupId);
     if (!me) return null;
     return {
       role: 'group',
       meta: this.meta(s, ctx),
-      view: this.module(s).groupView(s.state, groupId, ctx),
+      view: this.module(a).groupView(a.state, groupId, ctx),
       me,
     };
   }
@@ -568,18 +731,11 @@ export class SessionManager {
 
   exportJson(code: string) {
     const s = this.get(code);
-    const ctx = this.makeCtx(s);
     return {
       app: 'CiberJunta',
       exportedAt: new Date().toISOString(),
       code: s.code,
-      gameId: s.gameId,
-      gameTitle: catalogEntry(s.gameId).title,
       createdAt: new Date(s.createdAt).toISOString(),
-      seed: s.seed,
-      config: s.config,
-      phases: this.phases(s),
-      phaseIndex: s.phaseIndex,
       groups: s.groups.map((g) => ({
         id: g.id,
         name: g.name,
@@ -587,14 +743,25 @@ export class SessionManager {
         roles: g.roles,
         removed: g.removed,
       })),
-      rows: this.rows(s, ctx),
-      state: s.state,
+      activities: s.activities.map((a, index) => ({
+        dinamica: this.activityLabel(s, index),
+        gameId: a.gameId,
+        gameTitle: catalogEntry(a.gameId).title,
+        createdAt: new Date(a.createdAt).toISOString(),
+        seed: a.seed,
+        config: a.config,
+        phases: this.phases(a),
+        phaseIndex: a.phaseIndex,
+        rows: this.rows(s, index),
+        state: a.state,
+      })),
+      rows: this.rows(s),
     };
   }
 
   exportCsv(code: string): string {
     const s = this.get(code);
-    return toCsv(this.rows(s, this.makeCtx(s)), { sesion: s.code, dinamica: s.gameId });
+    return toCsv(this.rows(s), { sesion: s.code });
   }
 }
 

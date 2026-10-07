@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SessionManager } from './sessions.js';
+import { migrateSession, SessionManager, type SessionData } from './sessions.js';
 import { MemoryStorage } from './storage.js';
 import type { phish } from '@ciberjunta/shared';
 
@@ -69,7 +69,7 @@ describe('SessionManager', () => {
     expect(top.score).toBe(100 + Math.round(50 * (1 - 5 / 25)));
     const csv = m.exportCsv(code);
     expect(csv).toContain('Ronda 1');
-    expect(m.exportJson(code).seed).toBe(s.seed);
+    expect(m.exportJson(code).activities[0].seed).toBe(s.activities[0].seed);
   });
 
   it('una acción inválida no modifica el estado', () => {
@@ -77,12 +77,12 @@ describe('SessionManager', () => {
     const g = m.joinGroup(code, { name: 'Uno', startup: '', roles: {} });
     m.hostAction(code, { type: 'start' });
     m.hostAction(code, { type: 'game', action: { type: 'nextInject' } });
-    const before = JSON.stringify(m.get(code).state);
+    const before = JSON.stringify(m.get(code).activities[0].state);
     expect(() =>
       m.groupAction(code, g.groupId, { type: 'decide', inject: 0, option: 'Z' }),
     ).toThrow();
     expect(() => m.groupAction(code, g.groupId, { type: 'hackear' })).toThrow(/Acción inválida/);
-    expect(JSON.stringify(m.get(code).state)).toBe(before);
+    expect(JSON.stringify(m.get(code).activities[0].state)).toBe(before);
   });
 
   it('los dados de la subasta son reproducibles con la misma semilla', () => {
@@ -91,7 +91,7 @@ describe('SessionManager', () => {
       const { code } = mm.create({ gameId: 'subasta', pin: '1234' });
       mm.joinGroup(code, { name: 'A', startup: '', roles: {} });
       mm.joinGroup(code, { name: 'B', startup: '', roles: {} });
-      const s = mm.get(code);
+      const s = mm.get(code).activities[0];
       s.rngState = s.seed = 42;
       mm.hostAction(code, { type: 'start' });
       mm.hostAction(code, { type: 'nextPhase' });
@@ -100,5 +100,86 @@ describe('SessionManager', () => {
       return JSON.stringify((s.state as { revealed: unknown }).revealed);
     };
     expect(run()).toBe(run());
+  });
+
+  it('un mismo código sirve para varias dinámicas y conserva los grupos', () => {
+    const { code } = m.create({ gameId: 'phish', pin: '1234' });
+    const g = m.joinGroup(code, { name: 'Uno', startup: 'PagaFácil', roles: {} });
+    m.hostAction(code, { type: 'start' });
+    m.groupAction(code, g.groupId, { type: 'osint', notes: 'Viaje a Bariloche' });
+
+    m.hostAction(code, { type: 'addActivity', gameId: 'crisis', config: { injectSec: 60 } });
+    const s = m.get(code);
+    expect(s.activities.map((a) => a.gameId)).toEqual(['phish', 'crisis']);
+    expect(s.current).toBe(1);
+    expect(s.activities[1].config.injectSec).toBe(60);
+    // La dinámica anterior queda en pausa y la nueva en sala de espera.
+    expect(s.activities[0].paused).toBe(true);
+    const meta = m.hostPayload(s).meta;
+    expect(meta.gameId).toBe('crisis');
+    expect(meta.status).toBe('lobby');
+    expect(meta.groups.map((x) => x.name)).toEqual(['Uno']);
+    expect(meta.activities.map((a) => a.status)).toEqual(['running', 'lobby']);
+
+    // El grupo no necesita volver a unirse: actúa en la nueva dinámica.
+    m.hostAction(code, { type: 'start' });
+    m.hostAction(code, { type: 'game', action: { type: 'nextInject' } });
+    m.groupAction(code, g.groupId, { type: 'decide', inject: 0, option: 'A' });
+
+    // Volver a la primera la reanuda; la exportación incluye las dos.
+    m.hostAction(code, { type: 'switchActivity', index: 0 });
+    expect(s.activities[0].paused).toBe(false);
+    expect(s.activities[1].paused).toBe(true);
+    expect(() => m.hostAction(code, { type: 'switchActivity', index: 0 })).toThrow(/Ya están/);
+    expect(() => m.hostAction(code, { type: 'switchActivity', index: 5 })).toThrow(/no existe/);
+    const csv = m.exportCsv(code);
+    expect(csv.split('\r\n')[0]).toBe(
+      '\uFEFFsesion,dinamica,grupo,startup,fase,item,respuesta,detalle,puntos',
+    );
+    expect(csv).toMatch(/,phish,Uno,PagaFácil,/);
+    expect(csv).toMatch(/,crisis,Uno,PagaFácil,/);
+    expect(m.exportJson(code).activities.map((a) => a.dinamica)).toEqual(['phish', 'crisis']);
+  });
+
+  it('cambiar de dinámica congela sus plazos y respeta la pausa manual', () => {
+    const { code } = m.create({ gameId: 'crisis', pin: '1234' });
+    m.hostAction(code, { type: 'start' });
+    const s = m.get(code);
+    const crisis = s.activities[0];
+    const left = () =>
+      crisis.phaseEndsAt === null ? null : crisis.phaseEndsAt - m.gameNow(crisis);
+    m.hostAction(code, { type: 'addTime', seconds: 300 });
+    const before = left();
+    m.hostAction(code, { type: 'addActivity', gameId: 'escape' });
+    vi.advanceTimersByTime(120_000);
+    m.hostAction(code, { type: 'switchActivity', index: 0 });
+    expect(left()).toBe(before);
+
+    // Si el docente la pausó a mano, al volver sigue en pausa.
+    m.hostAction(code, { type: 'pause' });
+    m.hostAction(code, { type: 'switchActivity', index: 1 });
+    m.hostAction(code, { type: 'switchActivity', index: 0 });
+    expect(crisis.paused).toBe(true);
+  });
+
+  it('repite una dinámica y la distingue en la exportación', () => {
+    const { code } = m.create({ gameId: 'phish', pin: '1234' });
+    m.joinGroup(code, { name: 'Uno', startup: '', roles: {} });
+    m.hostAction(code, { type: 'addActivity', gameId: 'phish' });
+    const labels = m.exportJson(code).activities.map((a) => a.dinamica);
+    expect(labels).toEqual(['phish', 'phish #2']);
+  });
+
+  it('migra sesiones guardadas con el formato de una sola dinámica', () => {
+    const { code } = m.create({ gameId: 'subasta', pin: '1234' });
+    const { activities, current: _current, ...rest } = m.get(code);
+    const { createdAt: _createdAt, autoPaused: _autoPaused, ...activity } = activities[0];
+    const legacy = { ...rest, ...activity } as unknown as SessionData;
+    const migrated = migrateSession(legacy);
+    expect(migrated.current).toBe(0);
+    expect(migrated.activities).toHaveLength(1);
+    expect(migrated.activities[0].gameId).toBe('subasta');
+    expect(migrated.activities[0].seed).toBe(activities[0].seed);
+    expect(migrateSession(migrated)).toBe(migrated);
   });
 });

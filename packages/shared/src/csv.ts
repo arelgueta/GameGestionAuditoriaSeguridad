@@ -1,6 +1,7 @@
 import type { ExportRow } from './session.js';
 
 const HEADER: (keyof ExportRow)[] = [
+  'dinamica',
   'grupo',
   'startup',
   'fase',

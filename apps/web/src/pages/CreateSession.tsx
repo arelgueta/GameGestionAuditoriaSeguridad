@@ -5,14 +5,14 @@ import { createSession, hostLogin } from '../lib/api';
 import { keys, save } from '../lib/storage';
 import { toast } from '../lib/toast';
 import { unlockAudio } from '../lib/sound';
-import { cx, Field } from '../components/ui';
+import { Field } from '../components/ui';
 import { Disclaimer } from '../components/chrome';
-
-const PRIORITY_LABEL = {
-  alta: 'Prioridad alta',
-  media: 'Prioridad media',
-  baja: 'Soporte para actividad oral',
-};
+import {
+  ActivityFields,
+  GamePicker,
+  toActivityInput,
+  useActivityDraft,
+} from '../components/ActivityForm';
 
 export function CreateSession() {
   const [gameId, setGameId] = useState<GameId | null>(null);
@@ -26,41 +26,14 @@ export function CreateSession() {
       </nav>
       <h1 className="mb-2 text-4xl text-brand-900">Crear sesión</h1>
       <p className="mb-6 text-slate-700">
-        Elijan la dinámica, configúrenla y compartan el código con los grupos.
+        Elijan la primera dinámica, configúrenla y compartan el código con los grupos. Durante la
+        clase pueden sumar otras dinámicas desde el panel docente con el mismo código: los grupos no
+        tienen que volver a unirse.
       </p>
 
       {!entry ? (
         <>
-          <ul className="grid gap-4 md:grid-cols-2">
-            {CATALOG.map((g) => (
-              <li key={g.id}>
-                <button
-                  type="button"
-                  onClick={() => setGameId(g.id)}
-                  className="card h-full w-full text-left hover:border-brand-500 hover:bg-brand-50"
-                >
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-xl font-bold text-brand-900">{g.title}</span>
-                    <span
-                      className={cx(
-                        'chip',
-                        g.priority === 'alta'
-                          ? 'bg-accent-400 text-slate-900'
-                          : 'bg-slate-200 text-slate-800',
-                      )}
-                    >
-                      {PRIORITY_LABEL[g.priority]}
-                    </span>
-                  </span>
-                  <span className="mt-2 block text-slate-800">{g.objective}</span>
-                  <span className="mt-3 block text-sm text-slate-600">
-                    <span aria-hidden="true">⏱ </span>~{g.durationMin} min ·{' '}
-                    {g.phases.map((p) => p.title).join(' → ')}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <GamePicker onPick={setGameId} />
           <RecoverSession />
         </>
       ) : (
@@ -75,14 +48,7 @@ function ConfigForm({ entry, onBack }: { entry: CatalogEntry; onBack: () => void
   const navigate = useNavigate();
   const [pin, setPin] = useState('');
   const [expected, setExpected] = useState(6);
-  const [durations, setDurations] = useState<Record<string, number>>(() =>
-    Object.fromEntries(
-      entry.phases.filter((p) => p.durationSec).map((p) => [p.id, Math.round(p.durationSec! / 60)]),
-    ),
-  );
-  const [cfg, setCfg] = useState<Record<string, boolean | number>>(() =>
-    Object.fromEntries(entry.config.map((f) => [f.key, f.default])),
-  );
+  const [draft, setDraft] = useActivityDraft(entry);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -92,13 +58,9 @@ function ConfigForm({ entry, onBack }: { entry: CatalogEntry; onBack: () => void
     setBusy(true);
     try {
       const r = await createSession({
-        gameId: entry.id,
+        ...toActivityInput(entry, draft),
         pin,
         expectedGroups: expected,
-        phaseDurations: Object.fromEntries(
-          Object.entries(durations).map(([k, v]) => [k, Math.max(1, v) * 60]),
-        ),
-        config: cfg,
       });
       save(keys.host(r.code), r.hostToken);
       save(keys.lastCode, r.code);
@@ -149,66 +111,7 @@ function ConfigForm({ entry, onBack }: { entry: CatalogEntry; onBack: () => void
         />
       </Field>
 
-      {Object.keys(durations).length > 0 && (
-        <fieldset className="mb-4">
-          <legend className="label">Duración de las fases (minutos)</legend>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {entry.phases
-              .filter((p) => p.durationSec)
-              .map((p) => (
-                <label
-                  key={p.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2"
-                >
-                  <span>{p.title}</span>
-                  <input
-                    className="input max-w-[6rem]"
-                    type="number"
-                    min={1}
-                    max={120}
-                    value={durations[p.id]}
-                    onChange={(e) =>
-                      setDurations({ ...durations, [p.id]: Number(e.target.value) || 1 })
-                    }
-                  />
-                </label>
-              ))}
-          </div>
-        </fieldset>
-      )}
-
-      {entry.config.length > 0 && (
-        <fieldset className="mb-6">
-          <legend className="label">Opciones</legend>
-          <div className="space-y-3">
-            {entry.config.map((f) =>
-              f.type === 'boolean' ? (
-                <label key={f.key} className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    className="h-6 w-6"
-                    checked={!!cfg[f.key]}
-                    onChange={(e) => setCfg({ ...cfg, [f.key]: e.target.checked })}
-                  />
-                  {f.label}
-                </label>
-              ) : (
-                <label key={f.key} className="flex items-center justify-between gap-3">
-                  <span>{f.label}</span>
-                  <input
-                    className="input max-w-[7rem]"
-                    type="number"
-                    min={f.min}
-                    max={f.max}
-                    value={Number(cfg[f.key])}
-                    onChange={(e) => setCfg({ ...cfg, [f.key]: Number(e.target.value) })}
-                  />
-                </label>
-              ),
-            )}
-          </div>
-        </fieldset>
-      )}
+      <ActivityFields entry={entry} draft={draft} onChange={setDraft} />
 
       <button type="submit" className="btn-primary w-full text-lg" disabled={busy}>
         {busy ? 'Creando…' : 'Crear sesión y obtener código'}

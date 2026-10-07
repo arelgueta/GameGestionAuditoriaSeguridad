@@ -64,10 +64,25 @@ export interface Spotlight {
   items: SummaryItem[];
 }
 
+/** Resumen de cada dinámica cargada en la sesión (para elegir cuál mostrar). */
+export interface ActivityInfo {
+  index: number;
+  gameId: GameId;
+  title: string;
+  status: 'lobby' | 'running';
+  phaseIndex: number;
+  phaseCount: number;
+  /** Título de la fase actual, o null si está en la sala de espera. */
+  phaseTitle: string | null;
+}
+
 export interface SessionMeta {
   code: string;
+  /** Dinámica activa (la que ven los grupos y la pantalla). */
   gameId: GameId;
   gameTitle: string;
+  activityIndex: number;
+  activities: ActivityInfo[];
   status: 'lobby' | 'running';
   phases: PhaseInfo[];
   /** -1 = sala de espera */
@@ -82,6 +97,7 @@ export interface SessionMeta {
 }
 
 export interface ExportRow {
+  dinamica: string;
   grupo: string;
   startup: string;
   fase: string;
@@ -122,16 +138,24 @@ export const rolesSchema = z
   .partial()
   .default({});
 
-export const createSessionSchema = z.object({
+/** Una dinámica con su configuración: se usa al crear la sesión y al agregar otra después. */
+export const activitySchema = z.object({
   gameId: z.enum(GAME_IDS),
-  pin: pinSchema,
-  expectedGroups: z.number().int().min(1).max(40).default(6),
   phaseDurations: z.record(z.string().max(40), z.number().int().min(30).max(7200)).default({}),
   config: z
     .record(z.string().max(40), z.union([z.boolean(), z.number(), z.string().max(40)]))
     .default({}),
 });
+export type ActivityInput = z.input<typeof activitySchema>;
+
+export const createSessionSchema = activitySchema.extend({
+  pin: pinSchema,
+  expectedGroups: z.number().int().min(1).max(40).default(6),
+});
 export type CreateSessionInput = z.input<typeof createSessionSchema>;
+
+/** Máximo de dinámicas que se pueden cargar en una misma sesión. */
+export const MAX_ACTIVITIES = 12;
 
 export const hostLoginSchema = z.object({ pin: pinSchema });
 
@@ -160,8 +184,18 @@ export const hostActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearSpotlight') }),
   z.object({ type: z.literal('removeGroup'), groupId: z.string().max(40) }),
   z.object({ type: z.literal('game'), action: z.unknown() }),
+  activitySchema.extend({ type: z.literal('addActivity') }),
+  z.object({
+    type: z.literal('switchActivity'),
+    index: z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_ACTIVITIES - 1),
+  }),
 ]);
 export type HostAction = z.infer<typeof hostActionSchema>;
+export type HostActionInput = z.input<typeof hostActionSchema>;
 
 export type Ack<T = Record<string, never>> = ({ ok: true } & T) | { ok: false; error: string };
 

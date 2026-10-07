@@ -7,6 +7,7 @@ Plataforma web multijugador, en español, con **7 dinámicas de clase de Segurid
 - El docente proyecta una pantalla general (como Kahoot) y controla el ritmo desde su notebook.
 - Los grupos juegan desde un celular o notebook, sin registrarse: código de 6 caracteres o QR.
 - Todo lo producido (decisiones, textos, puntajes) se exporta en **CSV y JSON** para corregir con la rúbrica.
+- **Un solo código para toda la clase:** el docente puede cargar varias dinámicas en la misma sesión y elegir cuál ven los grupos en cada momento.
 - El contenido de cada dinámica está en archivos JSON editables en [`content/`](content/).
 
 | Dinámica                                 | Duración | Qué trabajan                                                                         |
@@ -63,6 +64,15 @@ Datos verificados en la [documentación de Render](https://render.com/docs/free)
 4. El docente toca **Iniciar dinámica** y avanza con **Siguiente fase**. Puede pausar, sumar o restar minutos, ver las respuestas de cada grupo en vivo, **proyectar 90 s** la respuesta de un grupo y quitar grupos duplicados.
 5. Si un grupo recarga la página o se le corta la conexión, vuelve automáticamente a su estado.
 6. Al final: debriefing en la pantalla proyectada y **Exportar CSV/JSON**.
+
+### Varias dinámicas en la misma clase
+
+En el panel docente, la tarjeta **Dinámicas de esta clase** permite:
+
+- **+ Agregar otra dinámica:** elegirla, ajustar duraciones y opciones, y tocar **Cargar y mostrar a los grupos**. Los grupos y la pantalla proyectada pasan a la nueva dinámica (en sala de espera) **con el mismo código**, sin volver a unirse.
+- **Mostrar a los grupos:** volver a una dinámica ya cargada. La que queda atrás se pausa con sus temporizadores congelados y se reanuda sola al volver (si el docente la había pausado a mano, sigue en pausa).
+- Se pueden cargar hasta 12 dinámicas por sesión, incluso repetir la misma.
+- La exportación CSV/JSON incluye **todas** las dinámicas de la sesión; la columna `dinamica` indica a cuál pertenece cada fila (si se repite una, la segunda aparece como `phish #2`).
 
 Si cierran el panel docente, se puede retomar desde _Soy docente → Retomar una sesión existente_ con el código y el PIN.
 

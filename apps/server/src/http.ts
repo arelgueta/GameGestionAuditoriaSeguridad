@@ -96,7 +96,8 @@ export function createApp(manager: SessionManager) {
     if (!code.success || !manager.has(code.data))
       return void res.status(404).json({ error: 'No existe una sesión con ese código.' });
     const s = manager.get(code.data);
-    res.json({ code: s.code, gameId: s.gameId, status: s.status });
+    const a = manager.act(s);
+    res.json({ code: s.code, gameId: a.gameId, status: a.status });
   });
 
   function requireHost(req: Request, res: Response): string | null {

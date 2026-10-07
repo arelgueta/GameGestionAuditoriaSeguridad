@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import type { Ack, Cue, GroupJoinInput, HostAction, StatePayload } from '@ciberjunta/shared';
+import type { Ack, Cue, GroupJoinInput, HostActionInput, StatePayload } from '@ciberjunta/shared';
 import { play } from './sound';
 import { toast } from './toast';
 import { keys, save } from './storage';
@@ -23,7 +23,7 @@ export interface SessionApi {
   /** Reloj de juego estimado (sincronizado con el servidor). */
   gameNow: () => number;
   groupAct: (action: unknown) => Promise<boolean>;
-  hostAct: (action: HostAction) => Promise<boolean>;
+  hostAct: (action: HostActionInput) => Promise<boolean>;
   gameAct: (action: unknown) => Promise<boolean>;
   join: (input: GroupJoinInput) => Promise<{ groupId: string; groupToken: string } | null>;
 }
