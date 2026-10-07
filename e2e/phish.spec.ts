@@ -34,7 +34,7 @@ test('partida corta de Phish or Fish con un docente y dos grupos', async ({ brow
 
   // OSINT → concurso.
   await page.getByRole('button', { name: /Iniciar dinámica/ }).click();
-  await expect(g1.getByText('Mini OSINT')).toBeVisible();
+  await expect(g1.getByRole('heading', { name: 'Mini OSINT' })).toBeVisible();
   await g1
     .getByLabel('Datos que usaría un atacante')
     .fill('Viaje a Bariloche y el nombre de su jefa');

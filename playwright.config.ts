@@ -12,6 +12,10 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
     locale: 'es-AR',
+    // Permite usar un Chromium del sistema: PW_CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e
+    launchOptions: process.env.PW_CHROMIUM_PATH
+      ? { executablePath: process.env.PW_CHROMIUM_PATH }
+      : {},
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
